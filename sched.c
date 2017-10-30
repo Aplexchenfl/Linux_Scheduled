@@ -113,25 +113,31 @@ void fcfs_sched(struct scheduled_jobs *all_jobs)
 
 void sjf_sched(struct scheduled_jobs *all_jobs)
 {
-    int count = 0, min_time, save_time, size_num, i, j;
-    struct scheduled_jobs *save_point, *tmp_jobs, *cur_jobs;
+    int count = 0, min_time, save_time, size_num, i, j, tmp;
+    struct scheduled_jobs *save_point, *tmp_jobs, *cur_jobs, *tmp_sort, *tmp_save;
 
     put_hint();
 
     // sort
-    save_point = all_jobs;
-    while(all_jobs)
-    {
-        size_num = all_jobs->sche_count;
-        all_jobs = all_jobs->next;
-    }
-    all_jobs = save_point;
+    cur_jobs = all_jobs;
+    do {
+        tmp_jobs = cur_jobs;
+        while(tmp_jobs)
+        {
+            if(cur_jobs->burst_time > tmp_jobs->burst_time)
+            {
+                save_time = cur_jobs->burst_time;
+                cur_jobs->burst_time = tmp_jobs->burst_time;
+                tmp_jobs->burst_time = save_time;
 
-    // maopao
-
-    // display burst times
-    printf("Process   Burst Time\n");
-    sche_display_all(all_jobs, 1);
+                tmp = cur_jobs->sche_count;
+                cur_jobs->sche_count = tmp_jobs->sche_count;
+                tmp_jobs->sche_count = tmp;
+            }
+            tmp_jobs = tmp_jobs->next;
+        }
+        cur_jobs = cur_jobs->next;
+    } while(cur_jobs->next);
 
     // calculate times
     save_point = all_jobs;
@@ -155,33 +161,26 @@ void sjf_sched(struct scheduled_jobs *all_jobs)
     }
     all_jobs = save_point;
 
-    save_point = all_jobs;
-    while(all_jobs)
-    {
-        if (all_jobs->next)
+    // back
+    cur_jobs = all_jobs;
+    do {
+        tmp_jobs = cur_jobs;
+        while(tmp_jobs)
         {
-            if (all_jobs->sche_count <= all_jobs->next->sche_count)
-                all_jobs = all_jobs->next;
-            else
+            if(cur_jobs->sche_count > tmp_jobs->sche_count)
             {
-                tmp_jobs = all_jobs->next;
+                save_time = cur_jobs->burst_time;
+                cur_jobs->burst_time = tmp_jobs->burst_time;
+                tmp_jobs->burst_time = save_time;
 
-                all_jobs->pre->next = tmp_jobs;
-                if (tmp_jobs->next)
-                    tmp_jobs->next->pre = all_jobs;
-
-                tmp_jobs->pre = all_jobs->pre;
-                all_jobs->pre = tmp_jobs;
-                all_jobs->next = tmp_jobs->next;
-                tmp_jobs->next = all_jobs;
-
-                all_jobs = all_jobs->pre;
+                tmp = cur_jobs->sche_count;
+                cur_jobs->sche_count = tmp_jobs->sche_count;
+                tmp_jobs->sche_count = tmp;
             }
+            tmp_jobs = tmp_jobs->next;
         }
-        else
-            break;
-    }
-    all_jobs = save_point;
+        cur_jobs = cur_jobs->next;
+    } while(cur_jobs->next);
 
     // display burst times
     printf("Process   Burst Time\n");
