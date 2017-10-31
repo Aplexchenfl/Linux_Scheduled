@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+int quantum_time = 0;
+
 struct scheduled_jobs
 {
     int sche_count;
@@ -29,7 +31,7 @@ void sche_display_burst(struct scheduled_jobs *all_jobs)
 
 void sche_display_start_stop(struct scheduled_jobs *all_jobs)
 {
-    printf("%2d           %2d\n", all_jobs->start_time, all_jobs->stop_time);
+    printf("%s           %2d          %2d\n", all_jobs->sche_name, all_jobs->start_time, all_jobs->stop_time);
 }
 
 void sche_display_wait(struct scheduled_jobs *all_jobs)
@@ -113,7 +115,7 @@ void fcfs_sched(struct scheduled_jobs *all_jobs)
 
 void sjf_sched(struct scheduled_jobs *all_jobs)
 {
-    int count = 0, min_time, save_time, size_num, i, j, tmp;
+    int count = 0, save_time, tmp;
     struct scheduled_jobs *save_point, *tmp_jobs, *cur_jobs, *tmp_sort, *tmp_save;
 
     put_hint();
@@ -176,6 +178,22 @@ void sjf_sched(struct scheduled_jobs *all_jobs)
                 tmp = cur_jobs->sche_count;
                 cur_jobs->sche_count = tmp_jobs->sche_count;
                 tmp_jobs->sche_count = tmp;
+
+                tmp = cur_jobs->start_time;
+                cur_jobs->start_time = tmp_jobs->start_time;
+                tmp_jobs->start_time = tmp;
+
+                tmp = cur_jobs->stop_time;
+                cur_jobs->stop_time = tmp_jobs->stop_time;
+                tmp_jobs->stop_time = tmp;
+
+                tmp = cur_jobs->wait_time;
+                cur_jobs->wait_time = tmp_jobs->wait_time;
+                tmp_jobs->wait_time = tmp;
+
+                tmp = cur_jobs->turn_around_time;
+                cur_jobs->turn_around_time = tmp_jobs->turn_around_time;
+                tmp_jobs->turn_around_time = tmp;
             }
             tmp_jobs = tmp_jobs->next;
         }
@@ -187,7 +205,7 @@ void sjf_sched(struct scheduled_jobs *all_jobs)
     sche_display_all(all_jobs, 1);
 
     // display start and stop times
-    printf("Start Time   Stop Time\n");
+    printf("Computing   Start Time   Stop Time\n");
     sche_display_all(all_jobs, 2);
 
     // display wait times
@@ -197,12 +215,110 @@ void sjf_sched(struct scheduled_jobs *all_jobs)
     // display turn around times
     printf("Computing   Turn around Time\n");
     sche_display_all(all_jobs, 4);
-
 }
 
 void srt_sched(struct scheduled_jobs *all_jobs)
 {
-    printf("srt\n");
+    int count = 0, save_time, tmp;
+    struct scheduled_jobs *save_point, *tmp_jobs, *cur_jobs, *tmp_sort, *tmp_save;
+
+    put_hint();
+
+    // sort
+    cur_jobs = all_jobs;
+    do {
+        tmp_jobs = cur_jobs;
+        while(tmp_jobs)
+        {
+            if(cur_jobs->burst_time > tmp_jobs->burst_time)
+            {
+                save_time = cur_jobs->burst_time;
+                cur_jobs->burst_time = tmp_jobs->burst_time;
+                tmp_jobs->burst_time = save_time;
+
+                tmp = cur_jobs->sche_count;
+                cur_jobs->sche_count = tmp_jobs->sche_count;
+                tmp_jobs->sche_count = tmp;
+            }
+            tmp_jobs = tmp_jobs->next;
+        }
+        cur_jobs = cur_jobs->next;
+    } while(cur_jobs->next);
+
+    // calculate times
+    save_point = all_jobs;
+    while(all_jobs)
+    {
+        count++;
+        if (count == 1)
+        {
+            all_jobs->start_time = 0;
+        }
+        else
+        {
+            all_jobs->start_time = all_jobs->pre->stop_time;
+        }
+        all_jobs->stop_time = all_jobs->start_time + all_jobs->burst_time;
+
+        all_jobs->wait_time = all_jobs->start_time;
+        all_jobs->turn_around_time = all_jobs->stop_time;
+
+        all_jobs = all_jobs->next;
+    }
+    all_jobs = save_point;
+
+    // back
+    cur_jobs = all_jobs;
+    do {
+        tmp_jobs = cur_jobs;
+        while(tmp_jobs)
+        {
+            if(cur_jobs->sche_count > tmp_jobs->sche_count)
+            {
+                save_time = cur_jobs->burst_time;
+                cur_jobs->burst_time = tmp_jobs->burst_time;
+                tmp_jobs->burst_time = save_time;
+
+                tmp = cur_jobs->sche_count;
+                cur_jobs->sche_count = tmp_jobs->sche_count;
+                tmp_jobs->sche_count = tmp;
+
+                tmp = cur_jobs->start_time;
+                cur_jobs->start_time = tmp_jobs->start_time;
+                tmp_jobs->start_time = tmp;
+
+                tmp = cur_jobs->stop_time;
+                cur_jobs->stop_time = tmp_jobs->stop_time;
+                tmp_jobs->stop_time = tmp;
+
+                tmp = cur_jobs->wait_time;
+                cur_jobs->wait_time = tmp_jobs->wait_time;
+                tmp_jobs->wait_time = tmp;
+
+                tmp = cur_jobs->turn_around_time;
+                cur_jobs->turn_around_time = tmp_jobs->turn_around_time;
+                tmp_jobs->turn_around_time = tmp;
+            }
+            tmp_jobs = tmp_jobs->next;
+        }
+        cur_jobs = cur_jobs->next;
+    } while(cur_jobs->next);
+
+    // display burst times
+    printf("Process   Burst Time\n");
+    sche_display_all(all_jobs, 1);
+
+    // display start and stop times
+    printf("Computing   Start Time   Stop Time\n");
+    sche_display_all(all_jobs, 2);
+
+    // display wait times
+    printf("Computing   Wait Time\n");
+    sche_display_all(all_jobs, 3);
+
+    // display turn around times
+    printf("Computing   Turn around Time\n");
+    sche_display_all(all_jobs, 4);
 }
 
 void rr_sched(struct scheduled_jobs *all_jobs)
@@ -244,6 +360,12 @@ int main(void)
 
     printf("Welcome to Job Scheduler Computer\nWhat algorithm would you like to use: \n> ");
     scanf("%s", sel);
+
+    if (!strcmp(sel, sel_cmp[3]))
+    {
+        printf("What is the time quantum for RR scheduling:\n> ");
+        scanf("%d", &quantum_time);
+    }
 
     while(1)
     {
